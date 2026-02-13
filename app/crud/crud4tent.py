@@ -1,6 +1,7 @@
 from app.models.models import User, RoleUserMapping, Role
 from app.schemas.user import UserCreate, UserUpdate
 from app.core.security import hash_password
+from sqlalchemy.orm import Session
 from typing import Optional, List, Dict, Any
 
 def get_user_by_id(db: Session, user_id: int, tenant_id: int):

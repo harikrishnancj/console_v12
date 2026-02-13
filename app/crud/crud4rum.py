@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 from app.models.models import RoleUserMapping, User, Role
 from app.schemas.role_user_mapping import RoleUserMappingCreate, RoleUserMappingUpdate
-
+from sqlalchemy.orm import Session
 from typing import Optional
 
 def create_role_user_mapping(db: Session, role_user_mapping: RoleUserMappingCreate, tenant_id: int):
