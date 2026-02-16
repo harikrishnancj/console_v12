@@ -82,7 +82,7 @@ def update_product(schema: ProductUpdate, db: Session, product_id: int):
     db.refresh(product)
     return product
 
-def delete_product(schema: ProductInDBBase, db: Session, product_id: int):
+def delete_product(db: Session, product_id: int):
     product = db.query(Product).filter(Product.product_id == product_id).first()
     if not product:
         return None

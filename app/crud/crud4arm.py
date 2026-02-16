@@ -15,17 +15,21 @@ def create_app_role_mapping(db: Session, app_role_mapping: AppRoleMappingCreate,
     if not role:
         raise HTTPException(status_code=404, detail="Role not found in this tenant")
 
-    # Check for existing mapping
+    # Find existing mapping for this PRODUCT and TENANT
     existing_mapping = db.query(AppRoleMapping).filter(
         AppRoleMapping.product_id == mapping_data["product_id"],
-        AppRoleMapping.role_id == mapping_data["role_id"],
         AppRoleMapping.tenant_id == tenant_id
     ).first()
-    if existing_mapping:
-        raise HTTPException(status_code=400, detail="This role is already mapped to this product in this tenant")
 
-    db_app_role_mapping = AppRoleMapping(**mapping_data)
-    db.add(db_app_role_mapping)
+    if existing_mapping:
+        # Update existing record
+        existing_mapping.role_id = mapping_data["role_id"]
+        db_app_role_mapping = existing_mapping
+    else:
+        # Create new record
+        db_app_role_mapping = AppRoleMapping(**mapping_data)
+        db.add(db_app_role_mapping)
+
     db.commit()
     db.refresh(db_app_role_mapping)
     return db_app_role_mapping
@@ -47,45 +51,6 @@ def get_app_role_mapping_by_id(db: Session, app_role_mapping_id: int, tenant_id:
         AppRoleMapping.tenant_id == tenant_id
     ).first()
 
-def update_app_role_mapping(db: Session, app_role_mapping_id: int, app_role_mapping: AppRoleMappingUpdate, tenant_id: int):
-    db_app_role_mapping = db.query(AppRoleMapping).filter(
-        AppRoleMapping.id == app_role_mapping_id,
-        AppRoleMapping.tenant_id == tenant_id
-    ).first()
-    if db_app_role_mapping is None:
-        raise HTTPException(status_code=404, detail="App role mapping not found")
-    
-    update_data = app_role_mapping.model_dump(exclude_unset=True)
-    
-    # If updating role_id, verify ownership
-    if "role_id" in update_data:
-        role = db.query(Role).filter(Role.role_id == update_data["role_id"], Role.tenant_id == tenant_id).first()
-        if not role:
-            raise HTTPException(status_code=404, detail="Role not found in this tenant")
-
-    # Check for potential conflicts if product_id or role_id are being changed
-    new_product_id = update_data.get("product_id", db_app_role_mapping.product_id)
-    new_role_id = update_data.get("role_id", db_app_role_mapping.role_id)
-
-    if "product_id" in update_data or "role_id" in update_data:
-        conflict_query = db.query(AppRoleMapping).filter(
-            AppRoleMapping.product_id == new_product_id,
-            AppRoleMapping.role_id == new_role_id,
-            AppRoleMapping.tenant_id == tenant_id,
-            AppRoleMapping.id != app_role_mapping_id
-        ).first()
-        if conflict_query:
-            raise HTTPException(status_code=400, detail="Another mapping already exists for this product and role")
-
-    # Force tenant_id consistency
-    update_data["tenant_id"] = tenant_id
-
-    for key, value in update_data.items():
-        setattr(db_app_role_mapping, key, value)
-    
-    db.commit()
-    db.refresh(db_app_role_mapping)
-    return db_app_role_mapping
 
 def delete_app_role_mapping(db: Session, app_role_mapping_id: int, tenant_id: int):
     db_app_role_mapping = db.query(AppRoleMapping).filter(

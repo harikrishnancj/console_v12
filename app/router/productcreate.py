@@ -22,7 +22,7 @@ def update_product(product_id: int, product: ProductUpdate, db: Session = Depend
 
 @router.delete("/products/{product_id}", response_model=BaseResponse[ProductInDBBase])
 def delete_product(product_id: int, db: Session = Depends(get_db)):
-    result = product_crud.delete_product(schema=None, db=db, product_id=product_id)
+    result = product_crud.delete_product(db=db, product_id=product_id)
     if not result:
         raise HTTPException(status_code=404, detail="Product not found")
     return wrap_response(data=result, message="Product deleted successfully")

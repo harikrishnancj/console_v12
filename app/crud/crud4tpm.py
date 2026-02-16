@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from app.models.models import TenantProductMapping, Tenant, Product
 from fastapi import HTTPException
-from app.schemas.tenant_product_map import TenantProductMapInDBBase, TenantProductMapCreate, TenantProductMapUpdate
+from app.schemas.tenant_product_map import TenantProductMapInDBBase, TenantProductMapCreate
 
 
 from typing import Optional

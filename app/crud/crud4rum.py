@@ -19,17 +19,21 @@ def create_role_user_mapping(db: Session, role_user_mapping: RoleUserMappingCrea
     if not role:
         raise HTTPException(status_code=404, detail="Role not found in this tenant")
 
-    # Check for existing mapping
+    # Find existing mapping for this USER and TENANT
     existing_mapping = db.query(RoleUserMapping).filter(
         RoleUserMapping.user_id == mapping_data["user_id"],
-        RoleUserMapping.role_id == mapping_data["role_id"],
         RoleUserMapping.tenant_id == tenant_id
     ).first()
-    if existing_mapping:
-        raise HTTPException(status_code=400, detail="This user already has this role in this tenant")
 
-    db_role_user_mapping = RoleUserMapping(**mapping_data)
-    db.add(db_role_user_mapping)
+    if existing_mapping:
+        # Update existing record
+        existing_mapping.role_id = mapping_data["role_id"]
+        db_role_user_mapping = existing_mapping
+    else:
+        # Create new record
+        db_role_user_mapping = RoleUserMapping(**mapping_data)
+        db.add(db_role_user_mapping)
+
     db.commit()
     db.refresh(db_role_user_mapping)
     return db_role_user_mapping
@@ -54,34 +58,6 @@ def get_all_role_user_mappings(db: Session, tenant_id: int, user_id: Optional[in
     return query.all()
 
 
-def update_role_user_mapping(db: Session, role_user_mapping_id: int, role_user_mapping: RoleUserMappingUpdate, tenant_id: int):
-    db_role_user_mapping = db.query(RoleUserMapping).filter(
-        RoleUserMapping.id == role_user_mapping_id,
-        RoleUserMapping.tenant_id == tenant_id
-    ).first()
-    if not db_role_user_mapping:
-        return None
-    
-    # Verify the new Role exists in this Tenant
-    role = db.query(Role).filter(Role.role_id == role_user_mapping.role_id, Role.tenant_id == tenant_id).first()
-    if not role:
-        raise HTTPException(status_code=404, detail="Role not found in this tenant")
-
-    # Check for potential conflict (if this user already has this role)
-    conflict_query = db.query(RoleUserMapping).filter(
-        RoleUserMapping.user_id == db_role_user_mapping.user_id,
-        RoleUserMapping.role_id == role_user_mapping.role_id,
-        RoleUserMapping.tenant_id == tenant_id,
-        RoleUserMapping.id != role_user_mapping_id
-    ).first()
-    if conflict_query:
-        raise HTTPException(status_code=400, detail="This user already has this role in this tenant")
-
-    db_role_user_mapping.role_id = role_user_mapping.role_id
-    
-    db.commit()
-    db.refresh(db_role_user_mapping)
-    return db_role_user_mapping
 
 
 def delete_role_user_mapping(db: Session, role_user_mapping_id: int, tenant_id: int):

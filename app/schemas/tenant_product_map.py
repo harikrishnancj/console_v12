@@ -8,8 +8,6 @@ class TenantProductMapBase(BaseModel):
 class TenantProductMapCreate(TenantProductMapBase):
     pass
 
-class TenantProductMapUpdate(TenantProductMapBase):
-    pass
 
 class TenantProductMapInDBBase(TenantProductMapBase):
     id: int

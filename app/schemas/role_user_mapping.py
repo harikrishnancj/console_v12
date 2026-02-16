@@ -9,8 +9,6 @@ class RoleUserMappingBase(BaseModel):
 class RoleUserMappingCreate(RoleUserMappingBase):
     pass
 
-class RoleUserMappingUpdate(BaseModel):
-    role_id: int
 
 class RoleUserMappingInDBBase(RoleUserMappingBase):
     id: int

@@ -10,8 +10,6 @@ class AppRoleMappingBase(BaseModel):
 class AppRoleMappingCreate(AppRoleMappingBase):
     pass
 
-class AppRoleMappingUpdate(AppRoleMappingBase):
-    pass
 
 class AppRoleMappingInDBBase(AppRoleMappingBase):
     id: int

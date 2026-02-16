@@ -10,9 +10,9 @@ from app.schemas.role import RoleInDBBase, RoleCreate, RoleUpdate
 from app.crud import crud4tpm as tenant_product_map_crud
 from app.schemas.tenant_product_map import TenantProductMapInDBBase, TenantProductMapCreate
 from app.crud import crud4rum as role_user_mapping_crud
-from app.schemas.role_user_mapping import RoleUserMappingInDBBase, RoleUserMappingCreate, RoleUserMappingUpdate
+from app.schemas.role_user_mapping import RoleUserMappingInDBBase, RoleUserMappingCreate
 from app.crud import crud4arm as app_role_mapping_crud
-from app.schemas.app_role_mapping import AppRoleMappingInDBBase, AppRoleMappingCreate, AppRoleMappingUpdate
+from app.schemas.app_role_mapping import AppRoleMappingInDBBase, AppRoleMappingCreate
 from app.crud import product as product_crud
 from app.schemas.product import ProductInDBBase
 from app.utils.response import wrap_response
@@ -100,12 +100,6 @@ def read_app_role_mapping(app_role_mapping_id: int, db: Session = Depends(get_db
         raise HTTPException(status_code=404, detail="App role mapping not found")
     return wrap_response(data=db_app_role_mapping, message="App role mapping details fetched successfully")
 
-@router.put("/app_role_mappings/{app_role_mapping_id}", response_model=BaseResponse[AppRoleMappingInDBBase])
-def update_app_role_mapping(app_role_mapping_id: int, app_role_mapping: AppRoleMappingUpdate, db: Session = Depends(get_db), tenant_id: int = Depends(get_tenant_id)):
-    result = app_role_mapping_crud.update_app_role_mapping(db=db, app_role_mapping=app_role_mapping, app_role_mapping_id=app_role_mapping_id, tenant_id=tenant_id)
-    if not result:
-        raise HTTPException(status_code=404, detail="App role mapping not found")
-    return wrap_response(data=result, message="App role mapping updated successfully")
 
 @router.delete("/app_role_mappings/{app_role_mapping_id}", response_model=BaseResponse[AppRoleMappingInDBBase])
 def delete_app_role_mapping(app_role_mapping_id: int, db: Session = Depends(get_db), tenant_id: int = Depends(get_tenant_id)):
@@ -131,14 +125,6 @@ def read_role_user_mapping(role_user_mapping_id: int, db: Session = Depends(get_
         raise HTTPException(status_code=404, detail="Role user mapping not found")
     return wrap_response(data=db_role_user_mapping, message="Role user mapping details fetched successfully")
 
-@router.put("/role_user_mappings/{role_user_mapping_id}", response_model=BaseResponse[RoleUserMappingInDBBase])
-def update_role_user_mapping(role_user_mapping_id: int, role_user_mapping: RoleUserMappingUpdate, db: Session = Depends(get_db), tenant_id: int = Depends(get_tenant_id)):
-    # Force the tenant_id from the session to prevent cross-tenant updates
-    role_user_mapping.tenant_id = tenant_id
-    result = role_user_mapping_crud.update_role_user_mapping(db=db, role_user_mapping=role_user_mapping, role_user_mapping_id=role_user_mapping_id, tenant_id=tenant_id)
-    if not result:
-        raise HTTPException(status_code=404, detail="Role user mapping not found")
-    return wrap_response(data=result, message="Role user mapping updated successfully")
 
 @router.delete("/role_user_mappings/{role_user_mapping_id}", response_model=BaseResponse[RoleUserMappingInDBBase])
 def delete_role_user_mapping(role_user_mapping_id: int, db: Session = Depends(get_db), tenant_id: int = Depends(get_tenant_id)):
