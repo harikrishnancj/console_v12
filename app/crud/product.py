@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from app.models.models import Product, TenantProductMapping
 from app.schemas.product import ProductInDBBase, ProductCreate, ProductUpdate
+from fastapi import HTTPException
 from typing import Optional
 
 
@@ -50,6 +51,11 @@ def get_tenant_product_by_id(db: Session, tenant_id: int, product_id: int):
 
 
 def create_product(schema: ProductCreate, db: Session):
+    # Check if product name already exists
+    existing_product = db.query(Product).filter(Product.product_name == schema.product_name).first()
+    if existing_product:
+        raise HTTPException(status_code=400, detail=f"Product with name '{schema.product_name}' already exists")
+
     product = Product(product_name=schema.product_name, price=schema.price, product_logo=schema.product_logo, product_description=schema.product_description, launch_url=schema.launch_url, sub_mode=schema.sub_mode)
     db.add(product)
     db.commit()
@@ -62,6 +68,13 @@ def update_product(schema: ProductUpdate, db: Session, product_id: int):
         return None
     
     update_data = schema.model_dump(exclude_unset=True)
+
+    # Check for name conflict
+    if "product_name" in update_data and update_data["product_name"] != product.product_name:
+        existing_product = db.query(Product).filter(Product.product_name == update_data["product_name"]).first()
+        if existing_product:
+            raise HTTPException(status_code=400, detail=f"Product with name '{update_data['product_name']}' already exists")
+
     for key, value in update_data.items():
         setattr(product, key, value)
 

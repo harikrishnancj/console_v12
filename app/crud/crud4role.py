@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from app.models.models import Role
 from app.schemas.role import RoleInDBBase, RoleCreate, RoleUpdate
+from fastapi import HTTPException
 from typing import Optional
 
 
@@ -19,6 +20,11 @@ def get_all_roles(db: Session, tenant_id: int = None, role_name: Optional[str] =
     return query.all()
 
 def create_role(db: Session, role: RoleCreate, tenant_id: int):
+    # Check if role name already exists in this tenant
+    existing_role = db.query(Role).filter(Role.role_name == role.role_name, Role.tenant_id == tenant_id).first()
+    if existing_role:
+        raise HTTPException(status_code=400, detail=f"Role with name '{role.role_name}' already exists")
+
     db_role = Role(role_name=role.role_name, tenant_id=tenant_id)
     db.add(db_role)
     db.commit()
@@ -30,6 +36,13 @@ def update_role(db: Session, role: RoleUpdate, role_id: int, tenant_id: int):
     if not db_role:
         return None
     update_data = role.model_dump(exclude_unset=True)
+    
+    # Check if new role name conflicts with existing one in the same tenant
+    if "role_name" in update_data and update_data["role_name"] != db_role.role_name:
+        existing_role = db.query(Role).filter(Role.role_name == update_data["role_name"], Role.tenant_id == tenant_id).first()
+        if existing_role:
+            raise HTTPException(status_code=400, detail=f"Role with name '{update_data['role_name']}' already exists")
+
     for key, value in update_data.items():
         setattr(db_role, key, value)
     db.commit()

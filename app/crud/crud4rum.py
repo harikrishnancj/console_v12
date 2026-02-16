@@ -19,6 +19,15 @@ def create_role_user_mapping(db: Session, role_user_mapping: RoleUserMappingCrea
     if not role:
         raise HTTPException(status_code=404, detail="Role not found in this tenant")
 
+    # Check for existing mapping
+    existing_mapping = db.query(RoleUserMapping).filter(
+        RoleUserMapping.user_id == mapping_data["user_id"],
+        RoleUserMapping.role_id == mapping_data["role_id"],
+        RoleUserMapping.tenant_id == tenant_id
+    ).first()
+    if existing_mapping:
+        raise HTTPException(status_code=400, detail="This user already has this role in this tenant")
+
     db_role_user_mapping = RoleUserMapping(**mapping_data)
     db.add(db_role_user_mapping)
     db.commit()
@@ -40,6 +49,7 @@ def get_all_role_user_mappings(db: Session, tenant_id: int, user_id: Optional[in
         query = query.filter(RoleUserMapping.user_id == user_id)
     if role_id:
         query = query.filter(RoleUserMapping.role_id == role_id)
+    
         
     return query.all()
 
@@ -52,25 +62,22 @@ def update_role_user_mapping(db: Session, role_user_mapping_id: int, role_user_m
     if not db_role_user_mapping:
         return None
     
-    update_data = role_user_mapping.model_dump(exclude_unset=True)
-    
-    # If updating user_id, verify ownership
-    if "user_id" in update_data:
-        user = db.query(User).filter(User.user_id == update_data["user_id"], User.tenant_id == tenant_id).first()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found in this tenant")
-            
-    # If updating role_id, verify ownership
-    if "role_id" in update_data:
-        role = db.query(Role).filter(Role.role_id == update_data["role_id"], Role.tenant_id == tenant_id).first()
-        if not role:
-            raise HTTPException(status_code=404, detail="Role not found in this tenant")
+    # Verify the new Role exists in this Tenant
+    role = db.query(Role).filter(Role.role_id == role_user_mapping.role_id, Role.tenant_id == tenant_id).first()
+    if not role:
+        raise HTTPException(status_code=404, detail="Role not found in this tenant")
 
-    # Force tenant_id consistency
-    update_data["tenant_id"] = tenant_id
+    # Check for potential conflict (if this user already has this role)
+    conflict_query = db.query(RoleUserMapping).filter(
+        RoleUserMapping.user_id == db_role_user_mapping.user_id,
+        RoleUserMapping.role_id == role_user_mapping.role_id,
+        RoleUserMapping.tenant_id == tenant_id,
+        RoleUserMapping.id != role_user_mapping_id
+    ).first()
+    if conflict_query:
+        raise HTTPException(status_code=400, detail="This user already has this role in this tenant")
 
-    for key, value in update_data.items():
-        setattr(db_role_user_mapping, key, value)
+    db_role_user_mapping.role_id = role_user_mapping.role_id
     
     db.commit()
     db.refresh(db_role_user_mapping)

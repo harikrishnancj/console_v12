@@ -22,9 +22,9 @@ class Tenant(Base):
     hashed_password = Column(String(255))
     is_verified = Column(Boolean, default=False)
 
-    users = relationship("User", back_populates="tenant")
-    products_link = relationship("TenantProductMapping", back_populates="tenant")
-    roles = relationship("Role", back_populates="tenant")
+    users = relationship("User", back_populates="tenant", cascade="all, delete-orphan")
+    products_link = relationship("TenantProductMapping", back_populates="tenant", cascade="all, delete-orphan")
+    roles = relationship("Role", back_populates="tenant", cascade="all, delete-orphan")
 
 
 
@@ -43,7 +43,7 @@ class User(Base):
     )
 
     tenant = relationship("Tenant", back_populates="users")
-    user_roles = relationship("RoleUserMapping", back_populates="user")
+    user_roles = relationship("RoleUserMapping", back_populates="user", cascade="all, delete-orphan")
 
 
 class Role(Base):
@@ -58,8 +58,8 @@ class Role(Base):
     )
 
     tenant = relationship("Tenant", back_populates="roles")
-    role_users = relationship("RoleUserMapping", back_populates="role")
-    app_mappings = relationship("AppRoleMapping", back_populates="role")
+    role_users = relationship("RoleUserMapping", back_populates="role", cascade="all, delete-orphan")
+    app_mappings = relationship("AppRoleMapping", back_populates="role", cascade="all, delete-orphan")
 
 
 class RoleUserMapping(Base):
@@ -91,8 +91,8 @@ class Product(Base):
     product_description = Column(String(500))
     price = Column(Integer)
 
-    tenant_mappings = relationship("TenantProductMapping", back_populates="product")
-    app_roles = relationship("AppRoleMapping", back_populates="product")
+    tenant_mappings = relationship("TenantProductMapping", back_populates="product", cascade="all, delete-orphan")
+    app_roles = relationship("AppRoleMapping", back_populates="product", cascade="all, delete-orphan")
 
 
 

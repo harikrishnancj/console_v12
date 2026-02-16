@@ -10,9 +10,7 @@ class RoleUserMappingCreate(RoleUserMappingBase):
     pass
 
 class RoleUserMappingUpdate(BaseModel):
-    role_id: Optional[int] = None
-    user_id: Optional[int] = None
-    tenant_id: Optional[int] = None
+    role_id: int
 
 class RoleUserMappingInDBBase(RoleUserMappingBase):
     id: int

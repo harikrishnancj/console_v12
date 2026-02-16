@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
-from app.models.models import TenantProductMapping
+from app.models.models import TenantProductMapping, Tenant, Product
+from fastapi import HTTPException
 from app.schemas.tenant_product_map import TenantProductMapInDBBase, TenantProductMapCreate, TenantProductMapUpdate
 
 
@@ -23,6 +24,19 @@ def create_tenant_product_map(db: Session, tenant_product_map: TenantProductMapC
     mapping_data = tenant_product_map.model_dump()
     mapping_data["tenant_id"] = tenant_id
     
+    # Check if Product exists
+    product = db.query(Product).filter(Product.product_id == mapping_data["product_id"]).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    # Check for existing mapping
+    existing_mapping = db.query(TenantProductMapping).filter(
+        TenantProductMapping.tenant_id == tenant_id,
+        TenantProductMapping.product_id == mapping_data["product_id"]
+    ).first()
+    if existing_mapping:
+        raise HTTPException(status_code=400, detail="This tenant is already subscribed to this product")
+
     db_tenant_product_map = TenantProductMapping(**mapping_data)
     db.add(db_tenant_product_map)
     db.commit()
